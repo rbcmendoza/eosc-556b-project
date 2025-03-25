@@ -25,7 +25,8 @@ and the recovered models to see if the fault offset is detectable and/or resolva
 ## Installation instructions
 1. Clone the repository.
 2. Create an environment using `conda env create -f environment.yml`.
-3. Open the _phase1.ipynb_ notebook with Jupyter and you're good to go!
+3. Activate the environment using `conda env activate eosc556b_project`.
+4. Open the _phase1.ipynb_ notebook with Jupyter and you're good to go!
 
 ## Important components
 1. The necessary packages are indicated in _environment.yml_ file.
