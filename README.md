@@ -26,6 +26,6 @@ and the recovered models to see if the fault offset is detectable and/or resolva
 coming soon
 
 ## Important components
-1. The _environment.yml_ file is necessary to run the code.
-2. _phase1.ipynb_ contains the main code.
-3. The _data_ folder contains the field data that will be used by phase1.ipynb.
+1. **Start** by building the environment in the _environment.yml_ file.
+2. Then, open _phase1.ipynb_. For now, it contains all of the code.
+3. The _data_ folder contains the field data that will be used by phase1.ipynb. You do not need to manually open anything from this folder.
