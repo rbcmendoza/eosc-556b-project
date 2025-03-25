@@ -20,12 +20,19 @@ I have imported the topography of a resistivity profile, and I am now working on
 generate_survey_from_abmn_locations function and a survey data file (.stg format).
 
 I have not started Phase 2, wherein I will introduce fault offset into the model I create in Phase 1. I will compare the predicted data
-and the recovered models to see if the fault offset is detectable and/or resolvable.
+and the recovered models to see if the fault offset is detectable and/or resolvable. Stay tuned!
 
 ## Installation instructions
-coming soon
+1. Clone the repository.
+2. Create an environment using `conda env create -f environment.yml`.
+3. Open the _phase1.ipynb_ notebook with Jupyter and you're good to go!
 
 ## Important components
-1. **Start** by building the environment in the _environment.yml_ file.
-2. Then, open _phase1.ipynb_. For now, it contains all of the code.
-3. The _data_ folder contains the field data that will be used by phase1.ipynb. You do not need to manually open anything from this folder.
+1. The necessary packages are indicated in _environment.yml_ file.
+2. _phase1.ipynb_ contains all of the functional code for now.
+3. The _fieldData_ folder contains the field data that will be used by phase1.ipynb. You do not need to manually open anything from this folder.
+
+## References
+Cockett, R., Kang, S., Heagy, L. J., Pidlisecky, A., & Oldenburg, D. W. (2015). SimPEG: An open source
+framework for simulation and gradient based parameter estimation in geophysical applications.
+Computers & Geosciences. https://doi.org/10.1016/j.cageo.2015.09.015
