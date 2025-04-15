@@ -1,0 +1,6 @@
+Does simulation_res.dpred(resistivity_model) return the data in terms of normalized voltages or apparent resistivities? Is there
+a default, or is it based on what the survey "data_type" is?
+
+data_type when specified in the survey object creation informs SimPEG of what the dobs data is (i.e., either normalized voltage
+or apparent resistivity). But, dpred will always be in normalized voltage. If you want to feed it back as dobs, you'll need
+to use the apparent_resistivity_from_voltage function.
