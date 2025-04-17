@@ -3,4 +3,28 @@ a default, or is it based on what the survey "data_type" is?
 
 data_type when specified in the survey object creation informs SimPEG of what the dobs data is (i.e., either normalized voltage
 or apparent resistivity). But, dpred will always be in normalized voltage. If you want to feed it back as dobs, you'll need
-to use the apparent_resistivity_from_voltage function.
+to use the apparent_resistivity_from_voltage function each time.
+
+
+Getting a user warning when generating the survey:
+_source_list: [Dipole(a: [  3.01915289 279.839     ]; b: [  0.    279.927]), Dipole(a: [  6.01871657 279.798     ]; b: [  3.01915289 279.839     ]), Dipole(a: [  9.01509641 279.704     ]; b: [  6.01871657 279.798     ]), Dipole(a: [ 11.97617521 279.76      ]; b: [  9.01509641 279.704     ]), Dipole(a: [ 14.95739276 279.755     ]; b: [ 11.97617521 279.76      ]), Dipole(a: [ 17.96085236 279.75      ]; b: [ 14.95739276 279.755     ]), Dipole(a: [ 20.95405883 279.866     ]; b: [ 17.96085236 279.75      ]), Dipole(a: [ 23.95254155 279.964     ]; b: [ 20.95405883 279.866     ]), Dipole(a: [ 26.95847823 279.897     ]; b: [ 23.95254155 279.964     ]), Dipole(a: [ 29.95579679 279.946     ]; b: [ 26.95847823 279.897     ]), Dipole(a: [ 32.96030751 279.9       ]; b: [ 29.95579679 279.946     ]), Dipole(a: [ 35.94713383 279.923     ]; b: [ 32.96030751 279.9       ]), Dipole(a: [ 38.96200126 279.843     ]; b: [ 35.94713383 279.923     ]), Dipole(a: [ 41.84664293 279.635     ]; b: [ 38.96200126 279.843     ]), Dipole(a: [ 44.73236449 278.727     ]; b: [ 41.84664293 279.635     ]), Dipole(a: [ 47.45740244 277.535     ]; b: [ 44.73236449 278.727     ]), Dipole(a: [ 50.36333232 276.393     ]; b: [ 47.45740244 277.535     ]), Dipole(a: [ 53.15833336 275.408     ]; b: [ 50.36333232 276.393     ]), Dipole(a: [ 55.9488928 274.541    ]; b: [ 53.15833336 275.408     ]), Dipole(a: [ 58.90188534 273.859     ]; b: [ 55.9488928 274.541    ]), Dipole(a: [ 61.84356224 273.486     ]; b: [ 58.90188534 273.859     ]), Dipole(a: [ 64.82296208 273.013     ]; b: [ 61.84356224 273.486     ]), Dipole(a: [ 67.76432698 272.542     ]; b: [ 64.82296208 273.013     ]), Dipole(a: [ 70.78422241 272.363     ]; b: [ 67.76432698 272.542     ]), Dipole(a: [ 73.78188274 272.341     ]; b: [ 70.78422241 272.363     ]), Dipole(a: [  6.01871657 279.798     ]; b: [  0.    279.927]), Dipole(a: [  9.01509641 279.704     ]; b: [  3.01915289 279.839     ]), Dipole(a: [ 11.97617521 279.76      ]; b: [  6.01871657 279.798     ]), Dipole(a: [ 14.95739276 279.755     ]; b: [  9.01509641 279.704     ]), Dipole(a: [ 17.96085236 279.75      ]; b: [ 11.97617521 279.76      ]), Dipole(a: [ 20.95405883 279.866     ]; b: [ 14.95739276 279.755     ]), Dipole(a: [ 23.95254155 279.964     ]; b: [ 17.96085236 279.75      ]), Dipole(a: [ 26.95847823 279.897     ]; b: [ 20.95405883 279.866     ]), Dipole(a: [ 29.95579679 279.946     ]; b: [ 23.95254155 279.964     ]), Dipole(a: [ 32.96030751 279.9       ]; b: [ 26.95847823 279.897     ]), Dipole(a: [ 35.94713383 279.923     ]; b: [ 29.95579679 279.946     ]), Dipole(a: [ 38.96200126 279.843     ]; b: [ 32.96030751 279.9       ]), Dipole(a: [ 41.84664293 279.635     ]; b: [ 35.94713383 279.923     ]), Dipole(a: [ 44.73236449 278.727     ]; b: [ 38.96200126 279.843     ]), Dipole(a: [ 47.45740244 277.535     ]; b: [ 41.84664293 279.635     ]), Dipole(a: [ 50.36333232 276.393     ]; b: [ 44.73236449 278.727     ]), Dipole(a: [ 53.15833336 275.408     ]; b: [ 47.45740244 277.535     ]), Dipole(a: [ 55.9488928 274.541    ]; b: [ 50.36333232 276.393     ]), Dipole(a: [  9.01509641 279.704     ]; b: [  0.    279.927]), Dipole(a: [ 11.97617521 279.76      ]; b: [  3.01915289 279.839     ]), Dipole(a: [ 14.95739276 279.755     ]; b: [  6.01871657 279.798     ]), Dipole(a: [ 17.96085236 279.75      ]; b: [  9.01509641 279.704     ]), Dipole(a: [ 20.95405883 279.866     ]; b: [ 11.97617521 279.76      ]), Dipole(a: [ 23.95254155 279.964     ]; b: [ 14.95739276 279.755     ]), Dipole(a: [ 26.95847823 279.897     ]; b: [ 17.96085236 279.75      ]), Dipole(a: [ 29.95579679 279.946     ]; b: [ 20.95405883 279.866     ]), Dipole(a: [ 35.94713383 279.923     ]; b: [ 26.95847823 279.897     ])]
+_BaseSurvey__sourceOrder: None
+_uid: 4e68c7ef-7b98-4d37-91d9-eeb1e6d6f227
+_survey_geometry: surface
+C:\Users\raulm\AppData\Local\Temp\ipykernel_8428\166868339.py:3: UserWarning: Ordering of ABMN locations changed when generating survey. Associated data vectors will need sorting. Set output_sorting to True for sorting indices.
+  survey = generate_survey_from_abmn_locations(locations_a=locations_a, locations_b=locations_b, locations_m=locations_m, locations_n=locations_n, data_type=datatype)
+
+
+Sensitivity weighting done how?
+
+How to change alpha_s and alpha_x?
+
+Why so slow?
+
+How to remove "noisy" data points (i.e. data points with greatest misfit)?
+
+How to make results less blocky (so, interpolate around mesh nodes)?
+
+Other questions:
+1. EarthImager uses RMS% to stop the iteration.
+2. The generate_survey_from_abmn_locations reorders the locations, and only sometimes.
