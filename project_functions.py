@@ -74,19 +74,23 @@ def extract_survey_and_data_from_stg(topography_2d, stg_filepath, electrode_spac
         'apparent resistivity').
         -Note: The data predicted will always be in normalized voltages, even if the observed data you feed the
         survey is in apparent resistivities.
+
+    This function assumes that the coordinates given in the terrain file correspond exactly with the electrodes.
+    
     RETURNS
     - survey: SimPEG Survey object that essentially lists the source-receiver locations for each datum
     - field_normalized_voltages_sorted: Pandas dataframe of 'V/I' column data from the .stg file;
-        sorted to match the survey.
+        sorted to match the survey. Units are Volts/Ampere.
     - field_apparent_resistivities_sorted: Pandas dataframe of 'apparent resistivity [Ohm-m]' column
-        data from the .stg file; sorted to match the survey.
+        data from the .stg file; sorted to match the survey. Units are Ohm-meters.
     - field_error_estimates_sorted: Pandas dataframe of 'error per mille' column data from the .stg file;
-        sorted to match the survey.
-    - pseudo_locations_xz: Array of each datum's pseudo-location, generated from SimPEG's pseudo_locations function.
+        sorted to match the survey. Divided by 1,000 such that the data are now unitless.
     - sorting_indices: Array of new indices for each datum. Use this only if you need to match unsorted field data
         to the returned survey.
     '''
     
+    # The necessary dipole-dipole data are dipole size (a), distance between dipoles (na), and x-coordinate of the midpoint
+    # between the dipoles (x_mp).
     raw_data_column_names = [
     'datum', 'type', 'date', 'time', 'V/I', 'error in per mille', 'current [mA]', 'apparent resistivity [Ohm-m]', 'a', 'na', 'x_mp'
     ]
@@ -96,13 +100,19 @@ def extract_survey_and_data_from_stg(topography_2d, stg_filepath, electrode_spac
                             skiprows=3, skipfooter=1, skipinitialspace=True, engine='python',
                             usecols=[0,1,2,3,4,5,6,7,8,9,10])
     
-    # Remove rows with type != DIP-DIP
+    # Remove rows with type not = "DIP-DIP"
     raw_data = raw_data[raw_data.loc[:,'type'].str.contains("DIP-DIP", na=False)]
 
     # Set datatypes of a, na, and x_mp to float so that we can do math on them
     raw_data.loc[:,'a'] = raw_data.loc[:,'a'].astype(float)
     raw_data.loc[:,'na'] = raw_data.loc[:,'na'].astype(float)
     raw_data.loc[:,'x_mp'] = raw_data.loc[:,'x_mp'].astype(float)
+
+    # Given electrode spacing s,
+    # the A index, i, is i = (x_mp/s) - (na/s)/2;
+    # the B index, j, is j = i - a/s;
+    # the M index, k, is k = (x_mp/s) + (na/s)/2; and
+    # the N index, l, is l = k + a/s.
 
     # Set the electrode spacing, s:
     if electrode_spacing is None:
@@ -121,10 +131,10 @@ def extract_survey_and_data_from_stg(topography_2d, stg_filepath, electrode_spac
     locations_n_indices = locations_m_indices + (raw_data.loc[:,'a'] / electrode_spacing)
     locations_n_indices = locations_n_indices.astype(int)
 
-    # Also extract the field-measured apparent resistivities and normalized voltages
+    # Also extract the field-measured data and their associated errors
     field_apparent_resistivities = raw_data.loc[:,'apparent resistivity [Ohm-m]']
     field_normalized_voltages = raw_data.loc[:,'V/I']
-    field_error_estimates = raw_data.loc[:,'error in per mille']
+    field_error_estimates = raw_data.loc[:,'error in per mille']/1000
 
     # Find the size of the data, n, based on the number of field-measured apparent resistivities
     n = len(field_apparent_resistivities)
@@ -152,7 +162,42 @@ def extract_survey_and_data_from_stg(topography_2d, stg_filepath, electrode_spac
     field_error_estimates_sorted = field_error_estimates.iloc[sorting_indices]
     field_normalized_voltages_sorted = field_normalized_voltages.iloc[sorting_indices]
 
-    # Extract pseudo-locations from survey object
-    pseudo_locations_xz = pseudo_locations(survey)
+    # # Extract pseudo-locations from survey object
+    # pseudo_locations_xz = pseudo_locations(survey)
 
-    return survey, field_normalized_voltages_sorted, field_apparent_resistivities_sorted, field_error_estimates_sorted, pseudo_locations_xz, sorting_indices
+    print("Note: If you see 'UserWarning: Ordering of ABMN locations changed when generating survey,' you may disregard it \n" \
+    "because the extract_survey_and_data_from_stg function sorts the data for you. To compare the survey and sorted data \n" \
+    "with the unsorted data, this function also returns the sorting_indices array that was used to sort the raw data. \n")
+
+    return survey, field_normalized_voltages_sorted, field_apparent_resistivities_sorted, field_error_estimates_sorted, sorting_indices
+
+def plot_survey(survey, vertical_exaggeration=1, ax=None):
+    # Extract pseudo-locations from survey object
+    survey_pseudo_locations = pseudo_locations(survey)
+
+    # Extract topography
+    survey_electrode_locations = survey.unique_electrode_locations
+
+    if ax is None:
+        fig, ax = plt.subplots(1,1, figsize=(12,4))
+    
+    # Plot topography (i.e., electrode locations as a line).
+    ax.plot(survey_electrode_locations[:,0], survey_electrode_locations[:,1], color="b", linewidth=2, label='surface', zorder=1)
+    
+    # Plot electrodes as points.
+    ax.scatter(survey_electrode_locations[:,0], survey_electrode_locations[:,1], 20, "r", label='electrodes')
+    
+    # Plot pseudo-locations
+    ax.scatter(survey_pseudo_locations[:,0], survey_pseudo_locations[:,-1], 8, "b", label='pseudo-locations')
+    # Set vertical exaggeration to 1
+    ax.set_aspect(vertical_exaggeration, adjustable='box')
+
+    # Other plot elements
+    ax.grid()
+    ax.legend()
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('Elevation [m]')
+    ax.set_title(f'Survey setup (VE={vertical_exaggeration})', fontsize=16, pad=10)
+    plt.show()
+
+    return ax
