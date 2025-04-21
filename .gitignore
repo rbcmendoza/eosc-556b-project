@@ -170,4 +170,11 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# SimPEG tutorials
 fwd_dcr_2d.ipynb
+plot_inv_2_dcr2d.ipynb
+dcr2d/
+dcr2d.tar.gz
+
+# VS Code Workspace
+*.code-workspace
