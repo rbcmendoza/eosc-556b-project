@@ -1,7 +1,9 @@
+import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import numpy as np
+from matplotlib.colors import LogNorm
+mpl.rcParams.update({"font.size": 14})  # default font size
 
 # SimPEG functionality
 from simpeg.electromagnetics.static import resistivity as dc
@@ -210,7 +212,8 @@ def create_mesh_from_survey(survey, base_cell_size=None, padding_configuration=[
     '''
     INPUTS
     survey: SimPEG survey object.
-    base_cell_size: Float. Minimum cell size in meters. Default is 1/4 of the average horizontal electrode spacing.
+    base_cell_size: Float. Minimum cell size in meters. Default is 1/4 of the average horizontal electrode spacing,
+        rounded to the nearest hundredth of a meter.
     padding_configuration: Array. Equivalent to the padding_cells_by_level parameter of the TreeMesh.refine_surface()
         method. Default is [16,6,1,1,1,1,1].
     height_buffer_percentage: Float. The percentage of the depth to the deepest pseudo-location that is ensured to
@@ -225,9 +228,10 @@ def create_mesh_from_survey(survey, base_cell_size=None, padding_configuration=[
     electrode_coordinates = survey.unique_electrode_locations
     survey_pseudo_locations = pseudo_locations(survey)
 
+    # Set default base_cell_size to 1/4 of the average horizontal electrode spacing, rounded to the nearest
+    # hundredth of a meter.
     if base_cell_size is None:
-        base_cell_size = np.mean(np.diff(electrode_coordinates[:,0]))/4
-        print(f'Base cell size = {base_cell_size} m')
+        base_cell_size = np.round(np.mean(np.diff(electrode_coordinates[:,0]))/4, decimals=2)
     
     # Domain width
     domain_width = electrode_coordinates[:,0].max() - electrode_coordinates[:,0].min()
@@ -275,7 +279,7 @@ def plot_mesh_and_survey(mesh, survey, full=False, buffer=5.0, vertical_exaggera
     full: Boolean. Set to True to plot the whole mesh. Set to False and use buffer to plot around the survey set-up.
         Default is False.
     buffer: Float that defines the buffer, in meters, to plot around the highest electrode, lowest pseudo-location,
-        and leftmost and rightmost electrodes. Dfault is 5 meters.
+        and leftmost and rightmost electrodes. Default is 5 meters.
     vertical_exaggeration: Float. Default is 1.0.
     ax: Matplotlib figure Axes object.
 
@@ -318,5 +322,81 @@ def plot_mesh_and_survey(mesh, survey, full=False, buffer=5.0, vertical_exaggera
     ax.set_xlabel('x [m]')
     ax.set_title('Mesh and survey setup')
     ax.legend()
+
+    return ax
+
+def plot_model_on_survey_and_mesh(mesh, logresistivity_model, plotting_map,
+                                  survey=None, colormap_name='jet', title='Resistivity model',
+                                  full=False, buffer=5.0, vertical_exaggeration=1, ax=None):
+    '''
+    INPUTS
+    mesh: SimPEG Mesh object upon which to plot the model.
+    logresistivity_model: Array of model parameters. The values are assumed to be in log-resistivity units.
+    plotting_map: SimPEG Map object, used to hide the inactive cells of the mesh.
+    survey: SimPEG Survey object. Optional; used to plot the surface topography, electrode positions, and pseudo-locations.
+    colormap_name: String. The colormap to use for the log resistivity values. Default is jet.
+    title: String. Figure title. Default is 'Log-resistivity model'.
+    full: Boolean. Set to True to plot the whole mesh. Set to False and use buffer to plot around the survey set-up.
+        Default is False.
+    buffer: Float that defines the buffer, in meters, to plot around the highest electrode, lowest pseudo-location,
+        and leftmost and rightmost electrodes. Default is 5 meters.
+    vertical_exaggeration: Float. Default is 1.0.
+    ax: Matplotlib figure Axes object.
+
+    RETURNS
+    '''
+    if ax is None:
+        fig, ax = plt.subplots(1,1, figsize=(9,4))
+    
+    # Map log of minimum and maximum resistivities to the colormap 0 to 1 range.
+    norm = LogNorm(vmin=np.e**logresistivity_model.min(), vmax=np.e**logresistivity_model.max())
+
+    # Plot resistivity values on mesh
+    mesh.plot_image(
+        plotting_map * np.e**logresistivity_model,
+        ax=ax,
+        grid=False,
+        pcolor_opts={"norm": norm, "cmap": colormap_name}
+    )
+
+    # Overlay mesh
+    mesh.plot_grid(ax=ax, linewidth = 0.5, alpha=0.5, color='white')
+
+    # If the survey is given, overlay topography, electrodes, and pseudo-locations.
+    if survey is not None:
+        # Extract survey electrodes and pseudo-locations
+        electrode_coordinates = survey.unique_electrode_locations
+        survey_pseudo_locations = pseudo_locations(survey)
+
+        # Plot topography as blue line
+        ax.plot(electrode_coordinates[:,0], electrode_coordinates[:,1], color="b", linewidth=2, label='surface', zorder=2)
+        # Plot electrodes as red dots
+        ax.scatter(electrode_coordinates[:,0], electrode_coordinates[:,1], 20, "r", label='electrodes')
+        # Plot pseudo-locations as blue dots
+        ax.scatter(survey_pseudo_locations[:,0], survey_pseudo_locations[:,1], 8, "b", label='pseudo-locations')
+
+    # Set vertical exaggeration
+    ax.set_aspect(vertical_exaggeration, adjustable='box')
+
+    # Set x and y limits if full=False and a Survey object is given.
+    if full is False and survey is not None:
+        xlim_max = electrode_coordinates[:,0].max()
+        xlim_min = electrode_coordinates[:,0].min()
+        ylim_max = electrode_coordinates[:,1].max()
+        ylim_min = survey_pseudo_locations[:,1].min()
+        ax.set_xlim(xlim_min-buffer, xlim_max+buffer)
+        ax.set_ylim(ylim_min-buffer, ylim_max+buffer)
+
+    # Other figure elements
+    ax.grid(False)
+    ax.set_ylabel('elevation [m]')
+    ax.set_xlabel('x [m]')
+    ax.set_title(title)
+    
+    # Add colorbar
+    scalarMappable = plt.cm.ScalarMappable(cmap=colormap_name, norm=norm)
+    scalarMappable.set_array([])
+    cbar = fig.colorbar(scalarMappable, ax=ax)
+    cbar.set_label(r"resistivity ($\Omega \cdot m$)", rotation=270, labelpad=15, size=12)
 
     return ax
