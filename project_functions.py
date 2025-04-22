@@ -6,6 +6,7 @@ from matplotlib.colors import LogNorm
 mpl.rcParams.update({"font.size": 14})  # default font size
 
 # SimPEG functionality
+import simpeg
 from simpeg.electromagnetics.static import resistivity as dc
 from simpeg.utils import model_builder
 from simpeg import maps, data
@@ -400,3 +401,219 @@ def plot_model_on_survey_and_mesh(mesh, logresistivity_model, plotting_map,
     cbar.set_label(r"resistivity ($\Omega \cdot m$)", rotation=270, labelpad=15, size=12)
 
     return ax
+
+def plot_normalized_volts_and_apparent_resistivity(data, survey, mesh=None, apparent_resistivity=None, colormap_name='jet',
+                                                   title="", full=False, buffer=5.0, vertical_exaggeration=1.0,
+                                                   ax=None):
+    '''
+    INPUTS
+    data: Array. Data in the form of normalized voltages.
+    survey: SimPEG Survey object.
+    mesh: SimPEG Mesh object.
+    apparent_resistivity: Array. Optional. Predicted data in the form of apparent resistivities. Calculated
+        from dpred and Survey if not given.
+    colormap_name: String. The colormap to use for the log resistivity values. Default is jet.
+    title: String. Prefix to be used for each subplots' title.
+    full: Boolean. Set to True to plot the whole mesh. Set to False and use buffer to plot around the survey set-up.
+        Default is False.
+    buffer: Float that defines the buffer, in meters, to plot around the highest electrode, lowest pseudo-location,
+        and leftmost and rightmost electrodes. Default is 5 meters.
+    vertical_exaggeration: Float. Default is 1.0.
+    ax: Matplotlib figure Axes object with two subplots.
+    
+    RETURNS
+    '''
+    if apparent_resistivity is None:
+        apparent_resistivity = apparent_resistivity_from_voltage(survey=survey, volts=data)
+
+    if ax is None:
+        fig, ax = plt.subplots(2,1, figsize=(8,8))
+
+    # Extract survey electrodes and pseudo-locations
+    electrode_coordinates = survey.unique_electrode_locations
+    survey_pseudo_locations = pseudo_locations(survey)
+    
+    # TOP PLOT
+    # Plot mesh, topography, and electrodes, or grid in the absence of given mesh.
+    if mesh is not None:
+        # Plot mesh as grey grid
+        mesh.plot_grid(ax=ax[0], linewidth = 0.5, alpha=0.5, color='grey', zorder=1)
+        ax[0].grid(False)
+    else:
+        ax[0].grid(True)
+
+    # Plot surface topography as blue line
+    ax[0].plot(electrode_coordinates[:,0], electrode_coordinates[:,1], color="b", linewidth=2, label='surface', zorder=2)
+    # Plot electrodes as red dots
+    ax[0].scatter(electrode_coordinates[:,0], electrode_coordinates[:,1], 20, "r", label='electrodes')
+
+    plot_pseudosection(
+        data=survey,
+        dobs= data,
+        plot_type="scatter",
+        ax=ax[0],
+        scale="log",
+        cbar_label="Resistance [V/A]",
+        scatter_opts={"cmap": colormap_name, "marker": 's', "label": 'pseudo-locations'}
+    )
+    # Set vertical exaggeration
+    ax[0].set_aspect(vertical_exaggeration, adjustable='box')
+
+    # Other figure elements
+    ax[0].set_xlabel("")
+    ax[0].set_ylabel("Pseudo-elevation [m]")
+    ax[0].set_title(title+" Normalized Voltages")
+    ax[0].legend()
+
+    # BOTTOM PLOT 
+    plot_pseudosection(
+        survey,
+        dobs= apparent_resistivity,
+        plot_type="contourf",
+        ax=ax[1],
+        scale="log",
+        cbar_label=r"Resistivity [$\Omega \cdot m$]",
+        mask_topography=True,
+        contourf_opts={"levels": 20, "cmap": colormap_name},
+    )
+    
+    # Plot mesh, or grid in the absence of given mesh.
+    if mesh is not None:
+        # Plot mesh as grey grid
+        mesh.plot_grid(ax=ax[1], linewidth = 0.5, alpha=0.5, color='grey', zorder=1)
+        ax[1].grid(False)
+    else:
+        ax[1].grid(True)
+
+    # Plot surface topography as blue line
+    ax[1].plot(electrode_coordinates[:,0], electrode_coordinates[:,1], color="b", linewidth=2, label='surface', zorder=2)
+    # Plot electrodes as red dots
+    ax[1].scatter(electrode_coordinates[:,0], electrode_coordinates[:,1], 20, "r", label='electrodes')
+
+    # Set vertical exaggeration
+    ax[1].set_aspect(vertical_exaggeration, adjustable='box')
+
+    # Other figure elements
+    ax[1].set_xlabel("x [m]")
+    ax[1].set_ylabel("Pseudo-elevation [m]")
+    ax[1].set_title(title+" Apparent Resistivity")
+
+    # Set x and y limits if full=False.
+    if full is False:
+        xlim_max = electrode_coordinates[:,0].max()
+        xlim_min = electrode_coordinates[:,0].min()
+        ylim_max = electrode_coordinates[:,1].max()
+        ylim_min = survey_pseudo_locations[:,1].min()
+        ax[0].set_xlim(xlim_min-buffer, xlim_max+buffer)
+        ax[0].set_ylim(ylim_min-buffer, ylim_max+buffer)
+        ax[1].set_xlim(xlim_min-buffer, xlim_max+buffer)
+        ax[1].set_ylim(ylim_min-buffer, ylim_max+buffer)
+    
+    plt.tight_layout()
+    return ax
+
+# def add_noise_and_create_data_object(data_values, survey, noise_level=0.05, export=False, filename=None, data_type='volt', comment_lines=""):
+#     '''
+#     Creates a SimPEG Data object from data and the survey associated with it. Optionally, will export the Data object to
+#     "./outputs/Data_objects/filename.obs"
+
+#     INPUTS
+#     data_values: Array. Normalized voltages or apparent resistivities. Specify which one with data_type.
+#     survey: SimPEG Survey object associated with the data_values. The Survey data_type should match the data_values data_type.
+#     noise_level: Float. The factor of the data value that will be used as the standard deviation of the added noise.
+#         Default value is 0.05 (i.e., standard deviation of noise = 5% of data value)
+#     export: Boolean. Set to True to export Data object to .obs file. If True, filename should be specified.
+#     filename: String. Must be specified if export = True. The object will be saved to "./outputs/Data_objects/filename.obs"
+#     data_type: 'volt' or 'apparent resistivity'. Default is 'volt'.
+#     comment_lines: String. Optional lines printed to the beginning of the file
+    
+#     RETURNS
+#     data_object: SimPEG Data object containing the data values.
+#     '''
+#     # To add noise, first create a random number generator
+#     random_number_generator = np.random.default_rng(seed=225)
+#     # Add the noise_level
+#     standard_deviation = noise_level * np.abs(data_values)
+#     noise = random_number_generator.normal(scale=standard_deviation, size=len(data_values))
+#     data_observed = data_values + noise
+
+#     data_object = simpeg.data.Data(survey, dobs=data_observed, standard_deviation=standard_deviation)
+
+#     if export is True:
+#         if filename is None:
+#             print('Specify filename!')
+#             return data_object
+#         filepath = "./outputs/Data_objects/"+filename+".obs"
+#         write_dcip2d_ubc(filepath,data_object,data_type=data_type,file_type='dobs',comment_lines=comment_lines)
+#         print(f'The Data object was saved to {filepath}')
+
+#     return data_object
+
+def create_data_object(data_values, survey, 
+                       add_noise, noise_level=0.03, uncertainties=None,
+                       export=False, filename=None, data_type='volt', comment_lines=""):
+    '''
+    Creates a SimPEG Data object from data and the survey associated with it. Optionally, will export the Data object to
+    "./outputs/Data_objects/filename.obs"
+
+    INPUTS
+    data_values: Array. Normalized voltages or apparent resistivities. Specify which one with data_type.
+    survey: SimPEG Survey object associated with the data_values. The Survey data_type should match the data_values data_type.
+    add_noise: Boolean. Set to True to add noise to data_values before creating the Data object.
+    noise_level: Float. The factor of the data value that will be used as the standard deviation of the added noise.
+        Default value is 0.03 (i.e., standard deviation of noise = 3% of data value), suggested by EarthImager.
+    uncertainties: Array of factors of uncertainty, typically from raw data. Note that if the error is greater than 0 but less than
+        0.01, it will be rounded up to 0.01. If there is no measure of uncertainty (i.e., the error is 0.000), the
+        noise_level will be used.
+    export: Boolean. Set to True to export Data object to .obs file. If True, filename should be specified.
+    filename: String. Must be specified if export = True. The object will be saved to "./outputs/Data_objects/filename.obs"
+    data_type: 'volt' or 'apparent resistivity'. Default is 'volt'.
+    comment_lines: String. Optional lines printed to the beginning of the file
+    
+    RETURNS
+    data_object: SimPEG Data object containing the data values.
+    uncertainties: Numpy array of final errors used.
+    '''
+    if add_noise is True:
+        # To add noise, first create a random number generator
+        random_number_generator = np.random.default_rng(seed=225)
+        # Add the noise_level
+        standard_deviation = noise_level * np.abs(data_values)
+        noise = random_number_generator.normal(scale=standard_deviation, size=len(data_values))
+        data_to_save = data_values + noise
+
+    elif add_noise is False:
+        if uncertainties is None:
+            # Assume that the standard deviation of uncertainties is the default value of noise_level
+            standard_deviation = noise_level * np.abs(data_values)
+        elif uncertainties is not None:
+            uncertainties = uncertainties.to_numpy()
+            for i in range(len(uncertainties)):
+                # If the error is greater than 0 but less than 0.01, it will be rounded up to 0.01. 
+                # If there is no measure of uncertainty (i.e., the error is 0.000), the noise_level will be used.
+                if uncertainties[i] == 0:
+                    uncertainties[i] = 0.03
+                elif uncertainties[i] < 0.01:
+                    uncertainties[i] = 0.01
+                else:
+                    pass
+
+            standard_deviation = uncertainties * np.abs(data_values)
+        
+        data_to_save = data_values
+
+    else:
+        print('Specify add_noise parameter!')
+
+    data_object = simpeg.data.Data(survey, dobs=data_to_save, standard_deviation=standard_deviation)
+
+    if export is True:
+        if filename is None:
+            print('Specify filename!')
+            return data_object
+        else:
+            filepath = "./outputs/Data_objects/"+filename+".obs"
+            write_dcip2d_ubc(filepath,data_object,data_type=data_type,file_type='dobs',comment_lines=comment_lines)
+            print(f'The Data object was saved to {filepath}')
+
+    return data_object, uncertainties
