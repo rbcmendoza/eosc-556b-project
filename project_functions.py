@@ -16,6 +16,10 @@ from simpeg.electromagnetics.static.utils.static_utils import (
     geometric_factor
 )
 
+# discretize functionality
+from discretize import TreeMesh
+from discretize.utils import active_from_xyz
+
 def create_topography_from_terrain_file(terrain_file_path, terrain_file_column_names=None):
     # Use default column names if none given
     if terrain_file_column_names is None:
@@ -199,5 +203,120 @@ def plot_survey(survey, vertical_exaggeration=1, ax=None):
     ax.set_ylabel('Elevation [m]')
     ax.set_title(f'Survey setup (VE={vertical_exaggeration})', fontsize=16, pad=10)
     plt.show()
+
+    return ax
+
+def create_mesh_from_survey(survey, base_cell_size=None, padding_configuration=[16,6,1,1,1,1,1], height_buffer_percentage=50.0):
+    '''
+    INPUTS
+    survey: SimPEG survey object.
+    base_cell_size: Float. Minimum cell size in meters. Default is 1/4 of the average horizontal electrode spacing.
+    padding_configuration: Array. Equivalent to the padding_cells_by_level parameter of the TreeMesh.refine_surface()
+        method. Default is [16,6,1,1,1,1,1].
+    height_buffer_percentage: Float. The percentage of the depth to the deepest pseudo-location that is ensured to
+        be included in the domain height. Default is 50.
+
+    RETURNS
+    mesh: SimPEG TreeMesh object.
+    active_cells: Array containing Booleans indicating if the mesh cells are active (True) or not (False).
+    '''
+
+    # Extract electrode coordinates and pseudo-locations from the survey
+    electrode_coordinates = survey.unique_electrode_locations
+    survey_pseudo_locations = pseudo_locations(survey)
+
+    if base_cell_size is None:
+        base_cell_size = np.mean(np.diff(electrode_coordinates[:,0]))/4
+        print(f'Base cell size = {base_cell_size} m')
+    
+    # Domain width
+    domain_width = electrode_coordinates[:,0].max() - electrode_coordinates[:,0].min()
+    # Domain height, with a buffer based on percentage of depth to deepest pseudo-location
+    domain_height = (
+        (electrode_coordinates[:,1].max()-survey_pseudo_locations[:,1].min())
+        *(1 + height_buffer_percentage/100)
+        )
+    
+    # Number of base cells in x and z
+    nbcx = 2 ** (int(np.ceil(np.log(domain_width / base_cell_size) / np.log(2.0)))+1)
+    nbcz = 2 ** (int(np.ceil(np.log(domain_height / base_cell_size) / np.log(2.0))))
+
+    # Define the base mesh with top at z = 0m.
+    hx = [(base_cell_size, nbcx)]
+    hz = [(base_cell_size, nbcz)]
+    mesh = TreeMesh([hx, hz], x0="CN", diagonal_balance=True)
+
+    # Shift top to maximum topography, shift center to electrode center
+    center=np.median(electrode_coordinates[:,0])
+    mesh.origin = mesh.origin + np.r_[center, electrode_coordinates[:,1].max()]
+
+    # Mesh refinement based on topography
+    mesh.refine_surface(
+        electrode_coordinates,
+        padding_cells_by_level=padding_configuration,
+        finalize=True,
+    )
+
+    # Define active cells
+    active_cells = active_from_xyz(mesh, electrode_coordinates)
+
+    print(f"Base cell size: {base_cell_size} m")
+    print(f"padding_cells_by_level parameter: {padding_configuration}")
+    print(f"# of cells: {mesh.n_cells}")  # Number of cells
+    print(f"# of nodes: {mesh.ntN}")
+    print(f"Max cell volume: {mesh.cell_volumes.max()} sq.m.")  # Largest cell size
+    return mesh, active_cells
+
+def plot_mesh_and_survey(mesh, survey, full=False, buffer=5.0, vertical_exaggeration=1.0, ax=None):
+    '''
+    INPUTS
+    mesh: SimPEG Mesh object.
+    survey: SimPEG survey object.
+    full: Boolean. Set to True to plot the whole mesh. Set to False and use buffer to plot around the survey set-up.
+        Default is False.
+    buffer: Float that defines the buffer, in meters, to plot around the highest electrode, lowest pseudo-location,
+        and leftmost and rightmost electrodes. Dfault is 5 meters.
+    vertical_exaggeration: Float. Default is 1.0.
+    ax: Matplotlib figure Axes object.
+
+    RETURNS
+    ax: Matplotlib figure Axes object containing the plot of the mesh with the survey set-up overlain on top of it.
+    '''
+
+    # Extract survey electrodes and pseudo-locations
+    electrode_coordinates = survey.unique_electrode_locations
+    survey_pseudo_locations = pseudo_locations(survey)
+
+    if ax is None:
+        fig, ax = plt.subplots(1,1, figsize=(8,4))
+
+    # Plot mesh
+    mesh.plot_grid(ax=ax, linewidth = 1, zorder = 1)
+
+    # Overlay topography, electrodes, and pseudo-locations
+    # Plot topography as blue line
+    ax.plot(electrode_coordinates[:,0], electrode_coordinates[:,1], color="b", linewidth=2, label='surface', zorder=2)
+    # Plot electrodes as red dots
+    ax.scatter(electrode_coordinates[:,0], electrode_coordinates[:,1], 20, "r", label='electrodes')
+    # Plot pseudo-locations as blue dots
+    ax.scatter(survey_pseudo_locations[:,0], survey_pseudo_locations[:,1], 8, "b", label='pseudo-locations')
+    # Set vertical exaggeration
+    ax.set_aspect(vertical_exaggeration, adjustable='box')
+
+    # Set x and y limits if full=False
+    if full is False:
+        xlim_max = electrode_coordinates[:,0].max()
+        xlim_min = electrode_coordinates[:,0].min()
+        ylim_max = electrode_coordinates[:,1].max()
+        ylim_min = survey_pseudo_locations[:,1].min()
+        ax.set_xlim(xlim_min-buffer, xlim_max+buffer)
+        ax.set_ylim(ylim_min-buffer, ylim_max+buffer)
+
+    # Other figure elements
+    ax.grid(False)
+    ax.set_ylabel('elevation [m]')
+    ax.set_xlabel('x [m]')
+    ax.set_title('Mesh and survey setup')
+    ax.legend()
 
     return ax
