@@ -178,3 +178,6 @@ dcr2d.tar.gz
 
 # VS Code Workspace
 *.code-workspace
+
+# Inversion files, because there's too many
+InversionModel*.txt

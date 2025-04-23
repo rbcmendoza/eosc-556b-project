@@ -253,7 +253,7 @@ def create_mesh_from_survey(survey, base_cell_size=None, padding_configuration=[
     mesh = TreeMesh([hx, hz], x0="CN", diagonal_balance=True)
 
     # Shift top to maximum topography, shift center to electrode center
-    center=np.round(np.median(electrode_coordinates[:,0]), decimals=2)
+    center=np.ceil(np.median(electrode_coordinates[:,0]))
     mesh.origin = mesh.origin + np.r_[center, electrode_coordinates[:,1].max()]
 
     # Mesh refinement based on topography
@@ -598,7 +598,6 @@ def create_data_object(data_values, survey,
             # Assume that the standard deviation of uncertainties is the default value of noise_level
             standard_deviation = noise_level * np.abs(data_values)
         elif uncertainties is not None:
-            uncertainties = uncertainties.to_numpy()
             for i in range(len(uncertainties)):
                 # If the error is greater than 0 but less than 0.01, it will be rounded up to 0.01. 
                 # If there is no measure of uncertainty (i.e., the error is 0.000), the noise_level will be used.
@@ -667,6 +666,7 @@ def load_model_from_txt(file_to_import, import_directory='./outputs/Models/'):
 def plot_initial_and_recovered_models(mesh, logresmodel_initial, logresmodel_recovered,
                                       plotting_map, survey, title,
                                       colormap_name='jet', full=False, buffer=5.0, vertical_exaggeration=1,
+                                      model_min=None, model_max=None,
                                       ax=None):
     if ax is None:
         fig, ax = plt.subplots(2,1, figsize=(16,6))
@@ -675,8 +675,10 @@ def plot_initial_and_recovered_models(mesh, logresmodel_initial, logresmodel_rec
     full_title_recovered = 'Recovered ' + title
 
     # Set minimum and maximum values for the colorbar.
-    model_min = min(np.e**logresmodel_initial.min(), np.e**logresmodel_recovered.min())
-    model_max = max(np.e**logresmodel_initial.max(), np.e**logresmodel_recovered.max())
+    if model_min is None:
+        model_min = min(np.e**logresmodel_initial.min(), np.e**logresmodel_recovered.min())
+    if model_max is None:
+        model_max = max(np.e**logresmodel_initial.max(), np.e**logresmodel_recovered.max())
 
     plot_model_on_survey_and_mesh(mesh=mesh, logresistivity_model=logresmodel_initial, plotting_map=plotting_map,
                               survey=survey, title=full_title_initial,
