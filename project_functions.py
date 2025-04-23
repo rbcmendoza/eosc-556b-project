@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -252,7 +253,7 @@ def create_mesh_from_survey(survey, base_cell_size=None, padding_configuration=[
     mesh = TreeMesh([hx, hz], x0="CN", diagonal_balance=True)
 
     # Shift top to maximum topography, shift center to electrode center
-    center=np.median(electrode_coordinates[:,0])
+    center=np.round(np.median(electrode_coordinates[:,0]), decimals=2)
     mesh.origin = mesh.origin + np.r_[center, electrode_coordinates[:,1].max()]
 
     # Mesh refinement based on topography
@@ -328,7 +329,8 @@ def plot_mesh_and_survey(mesh, survey, full=False, buffer=5.0, vertical_exaggera
 
 def plot_model_on_survey_and_mesh(mesh, logresistivity_model, plotting_map,
                                   survey=None, colormap_name='jet', title='Resistivity model',
-                                  full=False, buffer=5.0, vertical_exaggeration=1, ax=None):
+                                  full=False, buffer=5.0, vertical_exaggeration=1,
+                                  model_min=None, model_max=None, ax=None):
     '''
     INPUTS
     mesh: SimPEG Mesh object upon which to plot the model.
@@ -342,6 +344,8 @@ def plot_model_on_survey_and_mesh(mesh, logresistivity_model, plotting_map,
     buffer: Float that defines the buffer, in meters, to plot around the highest electrode, lowest pseudo-location,
         and leftmost and rightmost electrodes. Default is 5 meters.
     vertical_exaggeration: Float. Default is 1.0.
+    model_min: Float. Minimum model value for the colorbar, in terms of resistivity (NOT log resistivity).
+    model_max: Float. Maximum model value for the colorbar, in terms of resistivity (NOT log resistivity).
     ax: Matplotlib figure Axes object.
 
     RETURNS
@@ -349,8 +353,14 @@ def plot_model_on_survey_and_mesh(mesh, logresistivity_model, plotting_map,
     if ax is None:
         fig, ax = plt.subplots(1,1, figsize=(9,4))
     
+    # If the minimum and maximum model values for the colorbar aren't given, take them from the provided model.
+    if model_min is None:
+        model_min = np.e**logresistivity_model.min()
+    if model_max is None:
+        model_max = np.e**logresistivity_model.max()
+
     # Map log of minimum and maximum resistivities to the colormap 0 to 1 range.
-    norm = LogNorm(vmin=np.e**logresistivity_model.min(), vmax=np.e**logresistivity_model.max())
+    norm = LogNorm(vmin=model_min, vmax=model_max)
 
     # Plot resistivity values on mesh
     mesh.plot_image(
@@ -373,8 +383,8 @@ def plot_model_on_survey_and_mesh(mesh, logresistivity_model, plotting_map,
         ax.plot(electrode_coordinates[:,0], electrode_coordinates[:,1], color="b", linewidth=2, label='surface', zorder=2)
         # Plot electrodes as red dots
         ax.scatter(electrode_coordinates[:,0], electrode_coordinates[:,1], 20, "r", label='electrodes')
-        # Plot pseudo-locations as blue dots
-        ax.scatter(survey_pseudo_locations[:,0], survey_pseudo_locations[:,1], 8, "b", label='pseudo-locations')
+        # Plot pseudo-locations as small grey dots
+        ax.scatter(survey_pseudo_locations[:,0], survey_pseudo_locations[:,1], 1, "grey", label='pseudo-locations')
 
     # Set vertical exaggeration
     ax.set_aspect(vertical_exaggeration, adjustable='box')
@@ -397,6 +407,7 @@ def plot_model_on_survey_and_mesh(mesh, logresistivity_model, plotting_map,
     # Add colorbar
     scalarMappable = plt.cm.ScalarMappable(cmap=colormap_name, norm=norm)
     scalarMappable.set_array([])
+    fig = ax.figure
     cbar = fig.colorbar(scalarMappable, ax=ax)
     cbar.set_label(r"resistivity ($\Omega \cdot m$)", rotation=270, labelpad=15, size=12)
 
@@ -617,3 +628,64 @@ def create_data_object(data_values, survey,
             print(f'The Data object was saved to {filepath}')
 
     return data_object, uncertainties
+
+def save_model_to_txt(model, model_filename):
+    '''
+    Saves the input model to the './outputs/Models/' directory as a .txt file.
+    
+    INPUTS
+    model: Array. Contains the model parameters.
+    model_filename: String.
+    
+    RETURNS
+    Nothing
+    '''
+    # Construct the full path
+    output_directory = './outputs/Models/'
+    full_path = os.path.join(output_directory, model_filename + '.txt')
+
+    # Check if the directory exists, and create it if it doesn't
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+        print(f"Created directory: {output_directory}")
+    else:
+        print(f"Directory already exists: {output_directory}")
+
+    # Try to save the file
+    try:
+        np.savetxt(full_path, model)
+        print(f"Successfully saved the model to: {full_path}")
+    except Exception as e:
+        print(f"An error occurred while saving: {e}")
+    
+    return
+
+def load_model_from_txt(file_to_import, import_directory='./outputs/Models/'):
+    full_path = os.path.join(import_directory, file_to_import)
+    return np.loadtxt(full_path)
+
+def plot_initial_and_recovered_models(mesh, logresmodel_initial, logresmodel_recovered,
+                                      plotting_map, survey, title,
+                                      colormap_name='jet', full=False, buffer=5.0, vertical_exaggeration=1,
+                                      ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(2,1, figsize=(16,6))
+    
+    full_title_initial = 'Initial ' + title
+    full_title_recovered = 'Recovered ' + title
+
+    # Set minimum and maximum values for the colorbar.
+    model_min = min(np.e**logresmodel_initial.min(), np.e**logresmodel_recovered.min())
+    model_max = max(np.e**logresmodel_initial.max(), np.e**logresmodel_recovered.max())
+
+    plot_model_on_survey_and_mesh(mesh=mesh, logresistivity_model=logresmodel_initial, plotting_map=plotting_map,
+                              survey=survey, title=full_title_initial,
+                              colormap_name=colormap_name, full=full, buffer=buffer, vertical_exaggeration=vertical_exaggeration,
+                              model_min=model_min, model_max=model_max, ax=ax[0])
+    plot_model_on_survey_and_mesh(mesh=mesh, logresistivity_model=logresmodel_recovered, plotting_map=plotting_map,
+                              survey=survey, title=full_title_recovered,
+                              colormap_name=colormap_name, full=full, buffer=buffer, vertical_exaggeration=vertical_exaggeration,
+                              model_min=model_min, model_max=model_max, ax=ax[1])
+
+    plt.tight_layout()
+    return ax
