@@ -27,6 +27,7 @@ signal in the inverted model.
 3. The _fieldData_ folder contains the field data that will be used by MainNotebook.ipynb. You do not need to manually open anything from this folder.
 
 ## References
-Cockett, R., Kang, S., Heagy, L. J., Pidlisecky, A., & Oldenburg, D. W. (2015). SimPEG: An open source
-framework for simulation and gradient based parameter estimation in geophysical applications.
-Computers & Geosciences. https://doi.org/10.1016/j.cageo.2015.09.015
+- Cockett, R., Kang, S., Heagy, L. J., Pidlisecky, A., & Oldenburg, D. W. (2015). SimPEG: An open source framework for simulation and gradient based parameter estimation in geophysical applications. Computers & Geosciences, 85, 142–154. https://doi.org/10.1016/j.cageo.2015.09.015
+- Cowan, D. (n.d.-a). 2.5D DC Resistivity Inversion—SimPEG User Tutorials. Retrieved March 16, 2025, from https://simpeg.xyz/user-tutorials/inv-dcr-2d
+- Cowan, D. (n.d.-b). 2.5D Forward Simulation—SimPEG User Tutorials. Retrieved March 16, 2025, from https://simpeg.xyz/user-tutorials/fwd-dcr-2d
+- Heagy, L. J., Cockett, R., Kang, S., Rosenkjaer, G. K., & Oldenburg, D. W. (2017). A framework for simulation and inversion in electromagnetics. Computers & Geosciences, 107, 1–19. https://doi.org/10.1016/j.cageo.2017.06.018
