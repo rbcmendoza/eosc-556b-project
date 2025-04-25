@@ -24,6 +24,7 @@ from simpeg.electromagnetics.static.utils.static_utils import (
 from discretize import TreeMesh
 from discretize.utils import active_from_xyz
 
+# SURVEY TOOLS
 def create_topography_from_terrain_file(terrain_file_path, terrain_file_column_names=None):
     # Use default column names if none given
     if terrain_file_column_names is None:
@@ -210,6 +211,7 @@ def plot_survey(survey, vertical_exaggeration=1, ax=None):
 
     return ax
 
+# MESH TOOLS
 def create_mesh_from_survey(survey, base_cell_size=None, padding_configuration=[16,6,1,1,1,1,1], height_buffer_percentage=50.0):
     '''
     INPUTS
@@ -413,6 +415,7 @@ def plot_model_on_survey_and_mesh(mesh, logresistivity_model, plotting_map,
 
     return ax
 
+# DATA TOOLS
 def plot_normalized_volts_and_apparent_resistivity(data, survey, mesh=None, apparent_resistivity=None, colormap_name='jet',
                                                    title="", full=False, buffer=5.0, vertical_exaggeration=1.0,
                                                    ax=None):
@@ -628,6 +631,7 @@ def create_data_object(data_values, survey,
 
     return data_object, uncertainties
 
+# MODEL TOOLS
 def save_model_to_txt(model, model_filename):
     '''
     Saves the input model to the './outputs/Models/' directory as a .txt file.
