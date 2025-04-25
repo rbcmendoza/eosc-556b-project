@@ -527,41 +527,41 @@ def plot_normalized_volts_and_apparent_resistivity(data, survey, mesh=None, appa
     return ax
 
 # def add_noise_and_create_data_object(data_values, survey, noise_level=0.05, export=False, filename=None, data_type='volt', comment_lines=""):
-#     '''
-#     Creates a SimPEG Data object from data and the survey associated with it. Optionally, will export the Data object to
-#     "./outputs/Data_objects/filename.obs"
+    '''
+    Creates a SimPEG Data object from data and the survey associated with it. Optionally, will export the Data object to
+    "./outputs/Data_objects/filename.obs"
 
-#     INPUTS
-#     data_values: Array. Normalized voltages or apparent resistivities. Specify which one with data_type.
-#     survey: SimPEG Survey object associated with the data_values. The Survey data_type should match the data_values data_type.
-#     noise_level: Float. The factor of the data value that will be used as the standard deviation of the added noise.
-#         Default value is 0.05 (i.e., standard deviation of noise = 5% of data value)
-#     export: Boolean. Set to True to export Data object to .obs file. If True, filename should be specified.
-#     filename: String. Must be specified if export = True. The object will be saved to "./outputs/Data_objects/filename.obs"
-#     data_type: 'volt' or 'apparent resistivity'. Default is 'volt'.
-#     comment_lines: String. Optional lines printed to the beginning of the file
+    INPUTS
+    data_values: Array. Normalized voltages or apparent resistivities. Specify which one with data_type.
+    survey: SimPEG Survey object associated with the data_values. The Survey data_type should match the data_values data_type.
+    noise_level: Float. The factor of the data value that will be used as the standard deviation of the added noise.
+        Default value is 0.05 (i.e., standard deviation of noise = 5% of data value)
+    export: Boolean. Set to True to export Data object to .obs file. If True, filename should be specified.
+    filename: String. Must be specified if export = True. The object will be saved to "./outputs/Data_objects/filename.obs"
+    data_type: 'volt' or 'apparent resistivity'. Default is 'volt'.
+    comment_lines: String. Optional lines printed to the beginning of the file
     
-#     RETURNS
-#     data_object: SimPEG Data object containing the data values.
-#     '''
-#     # To add noise, first create a random number generator
-#     random_number_generator = np.random.default_rng(seed=225)
-#     # Add the noise_level
-#     standard_deviation = noise_level * np.abs(data_values)
-#     noise = random_number_generator.normal(scale=standard_deviation, size=len(data_values))
-#     data_observed = data_values + noise
+    RETURNS
+    data_object: SimPEG Data object containing the data values.
+    '''
+    # To add noise, first create a random number generator
+    random_number_generator = np.random.default_rng(seed=225)
+    # Add the noise_level
+    standard_deviation = noise_level * np.abs(data_values)
+    noise = random_number_generator.normal(scale=standard_deviation, size=len(data_values))
+    data_observed = data_values + noise
 
-#     data_object = simpeg.data.Data(survey, dobs=data_observed, standard_deviation=standard_deviation)
+    data_object = simpeg.data.Data(survey, dobs=data_observed, standard_deviation=standard_deviation)
 
-#     if export is True:
-#         if filename is None:
-#             print('Specify filename!')
-#             return data_object
-#         filepath = "./outputs/Data_objects/"+filename+".obs"
-#         write_dcip2d_ubc(filepath,data_object,data_type=data_type,file_type='dobs',comment_lines=comment_lines)
-#         print(f'The Data object was saved to {filepath}')
+    if export is True:
+        if filename is None:
+            print('Specify filename!')
+            return data_object
+        filepath = "./outputs/Data_objects/"+filename+".obs"
+        write_dcip2d_ubc(filepath,data_object,data_type=data_type,file_type='dobs',comment_lines=comment_lines)
+        print(f'The Data object was saved to {filepath}')
 
-#     return data_object
+    return data_object
 
 def create_data_object(data_values, survey, 
                        add_noise, noise_level=0.03, uncertainties=None,
