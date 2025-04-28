@@ -166,9 +166,9 @@ def extract_survey_and_data_from_stg(topography_2d, stg_filepath, electrode_spac
                                                 data_type=datatype, output_sorting=True)
 
     # Reorder field data based on sorting indices
-    field_apparent_resistivities_sorted = field_apparent_resistivities.iloc[sorting_indices]
-    field_error_estimates_sorted = field_error_estimates.iloc[sorting_indices]
-    field_normalized_voltages_sorted = field_normalized_voltages.iloc[sorting_indices]
+    field_apparent_resistivities_sorted = field_apparent_resistivities.iloc[sorting_indices].to_numpy()
+    field_error_estimates_sorted = field_error_estimates.iloc[sorting_indices].to_numpy()
+    field_normalized_voltages_sorted = field_normalized_voltages.iloc[sorting_indices].to_numpy()
 
     # # Extract pseudo-locations from survey object
     # pseudo_locations_xz = pseudo_locations(survey)
