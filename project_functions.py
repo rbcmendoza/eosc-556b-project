@@ -4,6 +4,7 @@ import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from matplotlib.ticker import PercentFormatter
 mpl.rcParams.update({"font.size": 14})  # default font size
 
 # SimPEG functionality
@@ -690,4 +691,27 @@ def plot_initial_and_recovered_models(mesh, logresmodel_initial, logresmodel_rec
                               model_min=model_min, model_max=model_max, ax=ax[1])
 
     plt.tight_layout()
+    return ax
+
+def plot_histogram_of_relative_misfits(relative_misfits, bin_width=0.05, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(1,1, figsize=(6,4))
+    
+    # Calculate bins
+    number_of_bins = np.ceil(np.max(np.abs(relative_misfits))/bin_width)
+    bin_edges = np.arange(number_of_bins) * bin_width
+
+    # Calculate weights. Needed in order to express y-axis as percentage.
+    weights = np.ones_like(relative_misfits)/len(relative_misfits)
+
+    # Calculate RMS
+    rms = np.sqrt(np.sum(relative_misfits**2)/relative_misfits.size)*100
+
+    ax.hist(np.abs(relative_misfits), bins=bin_edges, weights=weights, edgecolor='black')
+
+    ax.yaxis.set_major_formatter(PercentFormatter(1))
+    ax.set_ylabel("Percentage of data points")
+    ax.set_xlabel("Relative misfit")
+    ax.set_title(f'RMS = {rms:.{1}f}%')
+
     return ax
