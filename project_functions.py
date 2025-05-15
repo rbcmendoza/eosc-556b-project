@@ -716,34 +716,41 @@ def plot_histogram_of_relative_misfits(relative_misfits, bin_width=0.05, ax=None
 
     return ax
 
-def find_indices_of_poorly_fit_data(relative_misfits, noise_threshold=None, percentile_to_remove = 95):
+def find_indices_of_poorly_fit_data(relative_misfits, noise_threshold=0.5, percentile_to_remove = 95):
     '''
     INPUTS
     relative_misfits: Array of relative misfits from which to extract the indices of the data with poorest fit
     noise_threshold: Float. The value of relative misfit above which a data point will be classified as "poorly fit".
-    percentile_to_remove: Float. The percentile of greatest data misfit to be used to classify data points as "poorly fit". If 
-        noise_threshold is specified, the percentile will not be used. Default value is 95th percentile.
+        Default is 0.50. It is recommended not to set it higher than the default.
+    percentile_to_remove: Float. The percentile of greatest data misfit to be used to classify data points as "poorly fit".
+        Default value is 95th percentile.
 
     RETURNS
-    poorly_fit_indices: Array of booleans that are True for poorly fit indices in the relative_misfits array.
+    poorly_fit_indices: Array of booleans that are True for poorly fit indices in the relative_misfits array. Uses the
+        more conservative criterion between noise threshold and percentile (i.e., whichever selects more data points to be
+        removed).
     '''
-    if noise_threshold is None:
-        # Use percentile
-        # Convert from percentile to top k data points
-        k = int(np.floor(len(relative_misfits)*((100 - percentile_to_remove)/100)))
+    # Find indices using percentile
+    # Convert from percentile to top k data points
+    k = int(np.floor(len(relative_misfits)*((100 - percentile_to_remove)/100)))
 
-        # Get the indices that would sort the array in ascending order
-        sorted_indices = np.argsort(relative_misfits)
-        # Get the top k indices
-        top_k_indices = sorted_indices[-k:]
+    # Get the indices that would sort the array in ascending order
+    sorted_indices = np.argsort(np.abs(relative_misfits))
+    # Get the top k indices
+    top_k_indices = sorted_indices[-k:]
 
-        poorly_fit_indices = np.zeros_like(relative_misfits, dtype=bool)
-        poorly_fit_indices[top_k_indices] = True
+    poorly_fit_indices_percentile = np.zeros_like(relative_misfits, dtype=bool)
+    poorly_fit_indices_percentile[top_k_indices] = True
+    
+    # Find indices using noise threshold
+    poorly_fit_indices_threshold = np.abs(relative_misfits) > noise_threshold
 
-        return poorly_fit_indices
+    if np.sum(poorly_fit_indices_percentile) > np.sum(poorly_fit_indices_threshold):
+        poorly_fit_indices = poorly_fit_indices_percentile
+        print(f'Returned indices of {percentile_to_remove}-percentile of poorest fit data.')
     
     else:
-        # Use noise threshold
-        poorly_fit_indices = np.abs(relative_misfits) > noise_threshold
+        poorly_fit_indices =  poorly_fit_indices_threshold
+        print(f'Returned indices of data with relative misfit > {noise_threshold}')
 
-        return poorly_fit_indices
+    return poorly_fit_indices
