@@ -712,6 +712,38 @@ def plot_histogram_of_relative_misfits(relative_misfits, bin_width=0.05, ax=None
     ax.yaxis.set_major_formatter(PercentFormatter(1))
     ax.set_ylabel("Percentage of data points")
     ax.set_xlabel("Relative misfit")
-    ax.set_title(f'RMS = {rms:.{1}f}%')
+    ax.set_title(f'Data size = {np.size(relative_misfits)}; RMS = {rms:.{1}f}%')
 
     return ax
+
+def find_indices_of_poorly_fit_data(relative_misfits, noise_threshold=None, percentile_to_remove = 95):
+    '''
+    INPUTS
+    relative_misfits: Array of relative misfits from which to extract the indices of the data with poorest fit
+    noise_threshold: Float. The value of relative misfit above which a data point will be classified as "poorly fit".
+    percentile_to_remove: Float. The percentile of greatest data misfit to be used to classify data points as "poorly fit". If 
+        noise_threshold is specified, the percentile will not be used. Default value is 95th percentile.
+
+    RETURNS
+    poorly_fit_indices: Array of booleans that are True for poorly fit indices in the relative_misfits array.
+    '''
+    if noise_threshold is None:
+        # Use percentile
+        # Convert from percentile to top k data points
+        k = int(np.floor(len(relative_misfits)*((100 - percentile_to_remove)/100)))
+
+        # Get the indices that would sort the array in ascending order
+        sorted_indices = np.argsort(relative_misfits)
+        # Get the top k indices
+        top_k_indices = sorted_indices[-k:]
+
+        poorly_fit_indices = np.zeros_like(relative_misfits, dtype=bool)
+        poorly_fit_indices[top_k_indices] = True
+
+        return poorly_fit_indices
+    
+    else:
+        # Use noise threshold
+        poorly_fit_indices = np.abs(relative_misfits) > noise_threshold
+
+        return poorly_fit_indices
